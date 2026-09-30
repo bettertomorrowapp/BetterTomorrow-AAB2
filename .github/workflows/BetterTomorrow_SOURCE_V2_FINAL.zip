@@ -36,7 +36,7 @@ jobs:
         run: |
           rm -rf project
           mkdir project
-          unzip -q BetterTomorrow_SOURCE_V2_FINAL.zip -d project
+    BetterTomorrow_SOURCE_V2_FINAL_FIXED.zip
           test -f project/app/build.gradle
           test -f project/build.gradle
           test -f project/settings.gradle
