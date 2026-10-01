@@ -24,7 +24,10 @@ jobs:
         shell: bash
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"             "platform-tools"             "platforms;android-36"             "build-tools;35.0.0"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;35.0.0"
 
       - name: Set up Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
@@ -36,13 +39,14 @@ jobs:
         run: |
           rm -rf project
           mkdir project
-            
-          40  rm -rf project
-41  mkdir project
-          
-          unzip -q BetterTomorrow_SOURCE_V2_FINAL_FIXED.zip -d project
+          ZIP_FILE=$(find . -type f -name 'BetterTomorrow_SOURCE_V2_FINAL_FIXED.zip' -print -quit)
+          test -n "$ZIP_FILE"
+          unzip -q "$ZIP_FILE" -d project
           test -f project/app/build.gradle
-                - name: Restore Play upload keystore
+          test -f project/build.gradle
+          test -f project/settings.gradle
+
+      - name: Restore Play upload keystore
         shell: bash
         env:
           KEYSTORE_B64: ${{ secrets.BT_UPLOAD_KEYSTORE_B64 }}
@@ -61,28 +65,17 @@ jobs:
           BT_UPLOAD_STORE_PASSWORD: ${{ secrets.BT_UPLOAD_STORE_PASSWORD }}
         run: |
           gradle :app:bundleRelease --stacktrace
-      
-          gradle :app:bundleRelease --stacktrace
 
       - name: Verify AAB signature
         working-directory: project
         shell: bash
         run: |
           test -f app/build/outputs/bundle/release/app-release.aab
-          jarsigner -verify -verbose -certs app/build/outputs/bundle/release/app-release.aab > signature-check.txt
-          keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab >> signature-check.txt
-          grep -E "jar verified|X.509|SHA256:" signature-check.txt || true
+          jarsigner -verify -verbose -certs app/build/outputs/bundle/release/app-release.aab
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: BetterTomorrow-release-v2-AAB
           path: project/app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-
-      - name: Upload signature report
-        uses: actions/upload-artifact@v4
-        with:
-          name: BetterTomorrow-signature-report
-          path: project/signature-check.txt
           if-no-files-found: error
